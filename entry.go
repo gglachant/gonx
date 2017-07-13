@@ -83,6 +83,15 @@ func (entry *Entry) FieldsHash(fields []string) string {
 	return strings.Join(key, ";")
 }
 
+// Fields returns a slice of all field keys
+func (entry *Entry) Fields() []string {
+	var keys []string
+	for key := range entry.fields {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
 // Partial returns a partial field entry with the specified fields
 func (entry *Entry) Partial(fields []string) *Entry {
 	partial := NewEmptyEntry()
