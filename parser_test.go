@@ -1,9 +1,10 @@
 package gonx
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"strings"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestParser(t *testing.T) {
@@ -41,6 +42,52 @@ func TestParser(t *testing.T) {
 					"time_local":  "08/Nov/2013:13:39:18 +0000",
 					"request":     "",
 					"status":      "200",
+				})
+				entry, err := parser.ParseString(line)
+				So(err, ShouldBeNil)
+				So(entry, ShouldResemble, expected)
+			})
+
+			Convey("Parse invalid string", func() {
+				line := `GET /api/foo/bar HTTP/1.1`
+				_, err := parser.ParseString(line)
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("Parse time_iso8601 format", func() {
+			format := "$remote_addr [$time_iso8601] \"$request\" $status"
+			parser := NewParser(format)
+
+			Convey("Ensure parser format is ok", func() {
+				So(parser.format, ShouldEqual, format)
+			})
+
+			Convey("Test format to regexp translation", func() {
+				So(parser.regexp.String(), ShouldEqual,
+					`^(?P<remote_addr>[^ ]*) \[(?P<time_iso8601>[^]]*)\] "(?P<request>[^"]*)" (?P<status>[^ ]*)`)
+			})
+
+			Convey("ParseString", func() {
+				line := `89.234.89.123 [2013-11-08T13:39:18+00:00] "GET /api/foo/bar HTTP/1.1" 200`
+				expected := NewEntry(Fields{
+					"remote_addr":  "89.234.89.123",
+					"time_iso8601": "2013-11-08T13:39:18+00:00",
+					"request":      "GET /api/foo/bar HTTP/1.1",
+					"status":       "200",
+				})
+				entry, err := parser.ParseString(line)
+				So(err, ShouldBeNil)
+				So(entry, ShouldResemble, expected)
+			})
+
+			Convey("Handle empty values", func() {
+				line := `89.234.89.123 [2013-11-08T13:39:18+00:00] "" 200`
+				expected := NewEntry(Fields{
+					"remote_addr":  "89.234.89.123",
+					"time_iso8601": "2013-11-08T13:39:18+00:00",
+					"request":      "",
+					"status":       "200",
 				})
 				entry, err := parser.ParseString(line)
 				So(err, ShouldBeNil)
